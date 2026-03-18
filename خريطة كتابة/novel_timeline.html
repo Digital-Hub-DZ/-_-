@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>خريطة الأحداث</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Aref+Ruqaa+Ink:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:      #1e1714;
+  --ink2:     #4a3c36;
+  --ink3:     #8a7a72;
+  --paper:    #fdfaf2;
+  --paper2:   #f7f2e4;
+  --paper3:   #ede7d3;
+  --rose:     #b76e79;
+  --rose2:    #d4959e;
+  --rose3:    #f2dde0;
+  --gold:     #c9963a;
+  --gold2:    #e8bf7a;
+  --gold3:    #faf0d7;
+  --teal:     #4a8c8c;
+  --teal2:    #7ab5b5;
+  --teal3:    #d8eeee;
+  --lav:      #7a6aaa;
+  --lav2:     #aа9ccc;
+  --lav3:     #eae6f5;
+  --coral:    #c26a4a;
+  --shadow:   rgba(30,23,20,0.08);
+  --r:        12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Amiri', serif; background: var(--paper); color: var(--ink); direction: rtl; }
+
+/* ── HEADER ── */
+header {
+  background: var(--ink);
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 100;
+}
+.logo {
+  font-family: 'Aref Ruqaa Ink', serif;
+  font-size: 1.25rem; color: var(--gold2);
+  display: flex; align-items: center; gap: 8px;
+}
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.btn {
+  padding: 7px 16px; border-radius: 8px; border: none;
+  cursor: pointer; font-family: 'Amiri', serif; font-size: 0.9rem;
+  transition: .2s; display: flex; align-items: center; gap: 6px;
+}
+.btn-gold  { background: var(--gold); color: white; }
+.btn-gold:hover { background: var(--coral); }
+.btn-ghost { background: rgba(255,255,255,0.1); color: #ddd; border: 1px solid rgba(255,255,255,0.15); }
+.btn-ghost:hover { background: rgba(255,255,255,0.2); }
+.btn-sm { padding: 5px 12px; font-size: 0.82rem; }
+
+/* view toggle */
+.view-toggle { display: flex; background: rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; }
+.vt-btn {
+  padding: 6px 14px; border: none; background: transparent;
+  color: #aaa; cursor: pointer; font-family: 'Amiri', serif; font-size: 0.82rem;
+  transition: .2s;
+}
+.vt-btn.active { background: var(--gold); color: white; }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  background: var(--paper2);
+  border-bottom: 1px solid var(--paper3);
+  padding: 10px 20px;
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.filter-label { font-size: 0.78rem; color: var(--ink3); }
+.filter-chip {
+  padding: 4px 12px; border-radius: 20px; border: 1.5px solid var(--paper3);
+  background: white; cursor: pointer; font-family: 'Amiri', serif;
+  font-size: 0.8rem; transition: .15s; color: var(--ink2);
+}
+.filter-chip:hover { border-color: var(--rose2); }
+.filter-chip.active { border-color: transparent; color: white; }
+.filter-chip[data-cat="all"].active     { background: var(--ink); }
+.filter-chip[data-cat="حدث"].active    { background: var(--rose); }
+.filter-chip[data-cat="تحول"].active   { background: var(--gold); }
+.filter-chip[data-cat="صراع"].active   { background: var(--coral); }
+.filter-chip[data-cat="ذروة"].active   { background: var(--lav); }
+.filter-chip[data-cat="حل"].active     { background: var(--teal); }
+
+/* tension indicator */
+.tension-wrap { margin-right: auto; display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--ink3); }
+.tension-bar  { width: 100px; height: 6px; background: var(--paper3); border-radius: 10px; overflow: hidden; }
+.tension-fill { height: 100%; border-radius: 10px; background: linear-gradient(to left, var(--coral), var(--gold), var(--teal)); transition: width .5s; }
+
+/* ── MAIN VIEWS ── */
+.view { display: none; flex: 1; overflow: auto; }
+.view.active { display: flex; flex-direction: column; }
+
+/* ═══════════════════════════
+   TIMELINE VIEW
+═══════════════════════════ */
+.timeline-wrap {
+  padding: 30px 24px 60px;
+  position: relative; min-height: 100%;
+}
+
+/* central spine */
+.spine {
+  position: absolute;
+  top: 30px; bottom: 60px;
+  right: 50%; width: 3px;
+  background: linear-gradient(to bottom, var(--paper3), var(--paper3) 80%, transparent);
+  transform: translateX(50%);
+}
+
+.tl-item {
+  display: flex;
+  margin-bottom: 32px;
+  position: relative;
+  align-items: flex-start;
+  gap: 0;
+}
+.tl-item:nth-child(odd)  { flex-direction: row-reverse; }
+.tl-item:nth-child(even) { flex-direction: row; }
+
+/* dot on spine */
+.tl-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 3px solid var(--paper);
+  position: absolute;
+  right: 50%; top: 18px;
+  transform: translateX(50%);
+  z-index: 2; transition: .2s;
+  flex-shrink: 0;
+}
+.tl-item:hover .tl-dot { transform: translateX(50%) scale(1.3); }
+
+/* card */
+.tl-card {
+  width: calc(50% - 28px);
+  background: white;
+  border-radius: var(--r);
+  border: 1px solid var(--paper3);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: .2s;
+  box-shadow: 0 2px 8px var(--shadow);
+  position: relative;
+}
+.tl-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--shadow); }
+
+/* arrow connector card → spine */
+.tl-item:nth-child(odd)  .tl-card::before { content:''; position:absolute; left:-10px;  top:20px; border:5px solid transparent; border-right:5px solid var(--paper3); }
+.tl-item:nth-child(even) .tl-card::before { content:''; position:absolute; right:-10px; top:20px; border:5px solid transparent; border-left:5px solid var(--paper3); }
+
+.tl-chapter { font-size: 0.72rem; color: var(--ink3); margin-bottom: 3px; }
+.tl-title   { font-family: 'Aref Ruqaa Ink', serif; font-size: 1.05rem; color: var(--ink); margin-bottom: 5px; }
+.tl-desc    { font-size: 0.82rem; color: var(--ink2); line-height: 1.6; }
+.tl-meta    { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+.tl-chars   { font-size: 0.72rem; color: var(--ink3); }
+.cat-pill   { font-size: 0.68rem; padding: 2px 8px; border-radius: 20px; color: white; }
+.tension-num{ font-size: 0.68rem; padding: 2px 6px; border-radius: 6px; background: var(--paper2); color: var(--ink2); }
+
+/* card actions (show on hover) */
+.card-actions {
+  position: absolute; top: 8px; left: 8px;
+  display: flex; gap: 4px; opacity: 0; transition: .2s;
+}
+.tl-card:hover .card-actions { opacity: 1; }
+.icon-btn {
+  width: 24px; height: 24px; border-radius: 6px;
+  border: 1px solid var(--paper3); background: white;
+  cursor: pointer; font-size: 0.7rem; display: flex;
+  align-items: center; justify-content: center; transition: .15s;
+}
+.icon-btn:hover { background: var(--rose3); border-color: var(--rose2); }
+
+/* empty state */
+.empty-state {
+  text-align: center; padding: 60px 20px;
+  color: var(--ink3); font-size: 1rem; line-height: 2.2;
+}
+.empty-state div { font-size: 2.5rem; margin-bottom: 10px; }
+
+/* ═══════════════════════════
+   TENSION CHART VIEW
+═══════════════════════════ */
+#view-chart {
+  padding: 24px;
+  flex-direction: column;
+  gap: 20px;
+}
+.chart-title {
+  font-family: 'Aref Ruqaa Ink', serif; font-size: 1.1rem; color: var(--ink2);
+  text-align: center;
+}
+.chart-container {
+  background: white; border-radius: var(--r);
+  border: 1px solid var(--paper3);
+  padding: 20px; position: relative;
+  overflow: hidden;
+}
+#tension-svg { width: 100%; display: block; }
+
+/* ═══════════════════════════
+   CHAPTERS VIEW
+═══════════════════════════ */
+#view-chapters { padding: 20px; flex-direction: column; gap: 12px; }
+.chapter-group {
+  background: white; border-radius: var(--r);
+  border: 1px solid var(--paper3);
+  overflow: hidden;
+}
+.ch-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; cursor: pointer;
+  border-bottom: 1px solid var(--paper3);
+  background: var(--paper2);
+  transition: .15s;
+}
+.ch-header:hover { background: var(--paper3); }
+.ch-name { font-family: 'Aref Ruqaa Ink', serif; font-size: 1rem; color: var(--ink); }
+.ch-count { font-size: 0.75rem; color: var(--ink3); }
+.ch-events { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.ch-event-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--paper3); background: var(--paper);
+  cursor: pointer; transition: .15s;
+}
+.ch-event-row:hover { border-color: var(--rose2); background: var(--rose3); }
+.ch-evt-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.ch-evt-title { font-size: 0.9rem; color: var(--ink); flex: 1; }
+.ch-evt-tension { font-size: 0.72rem; color: var(--ink3); }
+
+/* ═══════════════════════════
+   ADD/EDIT MODAL
+═══════════════════════════ */
+.overlay {
+  position: fixed; inset: 0; background: rgba(30,23,20,0.5);
+  backdrop-filter: blur(3px); z-index: 500;
+  display: none; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--paper); border-radius: 18px;
+  padding: 26px; width: 100%; max-width: 500px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(30,23,20,0.25);
+  animation: popIn .25s ease;
+  direction: rtl;
+}
+@keyframes popIn {
+  from { opacity:0; transform:translateY(14px) scale(.97); }
+  to   { opacity:1; transform:translateY(0)    scale(1); }
+}
+.modal h3 {
+  font-family: 'Aref Ruqaa Ink', serif; font-size: 1.2rem;
+  color: var(--rose); margin-bottom: 20px; text-align: center;
+}
+.form-row { margin-bottom: 14px; }
+.form-row label { display:block; font-size:0.82rem; color:var(--ink2); margin-bottom:5px; }
+.form-row input, .form-row textarea, .form-row select {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--paper3);
+  border-radius: 10px; font-family: 'Amiri', serif; font-size: 0.95rem;
+  background: white; color: var(--ink); outline: none;
+  transition: .2s; direction: rtl;
+}
+.form-row input:focus, .form-row textarea:focus { border-color: var(--rose2); box-shadow: 0 0 0 3px var(--rose3); }
+.form-row textarea { min-height: 70px; resize: vertical; }
+.tension-slider-wrap { display: flex; align-items: center; gap: 10px; }
+.tension-slider { flex: 1; accent-color: var(--rose); }
+.tension-val { font-size: 1rem; font-weight: bold; color: var(--rose); min-width: 24px; text-align: center; }
+.cat-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+.cat-opt {
+  padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--paper3);
+  background: white; cursor: pointer; font-family: 'Amiri', serif;
+  font-size: 0.82rem; transition: .15s; color: var(--ink2);
+}
+.cat-opt.sel { border-color: transparent; color: white; }
+.cat-opt[data-v="حدث"].sel  { background: var(--rose); }
+.cat-opt[data-v="تحول"].sel { background: var(--gold); }
+.cat-opt[data-v="صراع"].sel { background: var(--coral); }
+.cat-opt[data-v="ذروة"].sel { background: var(--lav); }
+.cat-opt[data-v="حل"].sel   { background: var(--teal); }
+.modal-btns { display:flex; gap:8px; margin-top:18px; }
+.btn-rose { background: var(--rose); color: white; flex: 1; }
+.btn-rose:hover { background: var(--coral); }
+.btn-outline { background: white; color: var(--ink2); border: 1px solid var(--paper3); flex: 1; }
+.btn-outline:hover { background: var(--paper2); }
+
+/* detail modal */
+.detail-cat-badge { display:inline-block; padding:3px 12px; border-radius:20px; color:white; font-size:0.82rem; margin-bottom:10px; }
+.detail-title { font-family:'Aref Ruqaa Ink',serif; font-size:1.4rem; color:var(--ink); margin-bottom:8px; }
+.detail-desc  { font-size:0.95rem; color:var(--ink2); line-height:1.8; margin-bottom:14px; }
+.detail-grid  { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.detail-item  { background:var(--paper2); border-radius:8px; padding:10px 12px; }
+.detail-item .di-label { font-size:0.72rem; color:var(--ink3); margin-bottom:3px; }
+.detail-item .di-val   { font-size:0.9rem; color:var(--ink); }
+
+/* tension meter in detail */
+.tension-meter { background: var(--paper3); border-radius:10px; height:8px; overflow:hidden; margin-top:4px; }
+.tension-meter-fill { height:100%; border-radius:10px; }
+
+/* toast */
+.toast {
+  position:fixed; bottom:20px; left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:var(--ink); color:white; padding:9px 22px;
+  border-radius:30px; font-size:0.85rem; opacity:0;
+  transition:.3s; z-index:9999; pointer-events:none;
+  font-family:'Amiri',serif; white-space:nowrap;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* scrollbar */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-thumb { background:var(--paper3); border-radius:10px; }
+
+/* mobile tweaks */
+@media (max-width:600px) {
+  .tl-card { width: calc(50% - 18px); }
+  .spine { right:50%; }
+  .timeline-wrap { padding: 20px 12px 50px; }
+  header { padding: 10px 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">🗺️ خريطة الأحداث</div>
+  <div class="header-actions">
+    <div class="view-toggle">
+      <button class="vt-btn active" onclick="setView('timeline')">خط زمني</button>
+      <button class="vt-btn" onclick="setView('chart')">منحنى التوتر</button>
+      <button class="vt-btn" onclick="setView('chapters')">الفصول</button>
+    </div>
+    <button class="btn btn-gold" onclick="openAdd()">+ حدث جديد</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearAll()">مسح الكل</button>
+  </div>
+</header>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <span class="filter-label">تصفية:</span>
+  <button class="filter-chip active" data-cat="all"    onclick="setFilter('all')">الكل</button>
+  <button class="filter-chip" data-cat="حدث"    onclick="setFilter('حدث')">حدث</button>
+  <button class="filter-chip" data-cat="تحول"   onclick="setFilter('تحول')">تحوّل</button>
+  <button class="filter-chip" data-cat="صراع"   onclick="setFilter('صراع')">صراع</button>
+  <button class="filter-chip" data-cat="ذروة"   onclick="setFilter('ذروة')">ذروة</button>
+  <button class="filter-chip" data-cat="حل"     onclick="setFilter('حل')">حل</button>
+  <div class="tension-wrap">
+    <span>توتر الرواية:</span>
+    <div class="tension-bar"><div class="tension-fill" id="avg-tension" style="width:0%"></div></div>
+    <span id="avg-val">0%</span>
+  </div>
+</div>
+
+<!-- ── TIMELINE VIEW ── -->
+<div class="view active" id="view-timeline">
+  <div class="timeline-wrap">
+    <div class="spine"></div>
+    <div id="tl-list"></div>
+  </div>
+</div>
+
+<!-- ── CHART VIEW ── -->
+<div class="view" id="view-chart">
+  <div class="chart-title">منحنى توتر الرواية 📈</div>
+  <div class="chart-container">
+    <svg id="tension-svg" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+  <div style="font-size:0.8rem;color:var(--ink3);text-align:center;">
+    كل نقطة = حدث في الرواية — ارفعي توتر الأحداث من بطاقة الحدث لترسمي المنحنى
+  </div>
+</div>
+
+<!-- ── CHAPTERS VIEW ── -->
+<div class="view" id="view-chapters">
+  <div id="chapters-list"></div>
+</div>
+
+<!-- ── ADD/EDIT MODAL ── -->
+<div class="overlay" id="modal-add">
+  <div class="modal">
+    <h3 id="modal-title">✨ إضافة حدث جديد</h3>
+    <div class="form-row">
+      <label>عنوان الحدث *</label>
+      <input id="f-title" placeholder="مثال: اكتشاف السر، اللقاء الأول...">
+    </div>
+    <div class="form-row">
+      <label>الفصل</label>
+      <input id="f-chapter" placeholder="مثال: الفصل الأول، مشهد افتتاحي..." value="الفصل الأول">
+    </div>
+    <div class="form-row">
+      <label>وصف الحدث</label>
+      <textarea id="f-desc" placeholder="ماذا يحدث؟ وكيف يؤثر على مسار القصة؟"></textarea>
+    </div>
+    <div class="form-row">
+      <label>الشخصيات المشاركة</label>
+      <input id="f-chars" placeholder="نورا، عمر، الغريب... (افصلي بفاصلة)">
+    </div>
+    <div class="form-row">
+      <label>نوع الحدث</label>
+      <div class="cat-picker" id="cat-picker">
+        <button class="cat-opt sel" data-v="حدث">حدث</button>
+        <button class="cat-opt" data-v="تحول">تحوّل</button>
+        <button class="cat-opt" data-v="صراع">صراع</button>
+        <button class="cat-opt" data-v="ذروة">ذروة</button>
+        <button class="cat-opt" data-v="حل">حل</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>مستوى التوتر — <span id="tension-preview">5</span>/10</label>
+      <div class="tension-slider-wrap">
+        <span style="font-size:0.8rem;color:var(--ink3);">هادئ</span>
+        <input type="range" class="tension-slider" id="f-tension" min="1" max="10" value="5"
+               oninput="document.getElementById('tension-preview').textContent=this.value">
+        <span style="font-size:0.8rem;color:var(--ink3);">مشتعل</span>
+        <span class="tension-val" id="t-val">5</span>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-rose" onclick="saveEvent()">💾 حفظ</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-add')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL MODAL ── -->
+<div class="overlay" id="modal-detail">
+  <div class="modal">
+    <div id="detail-content"></div>
+    <div class="modal-btns">
+      <button class="btn btn-gold" id="detail-edit-btn">✏️ تعديل</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-detail')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let events = [];
+let filter  = 'all';
+let editIdx = null;
+let currentView = 'timeline';
+
+const CAT_COLORS = {
+  'حدث':  '#b76e79',
+  'تحول': '#c9963a',
+  'صراع': '#c26a4a',
+  'ذروة': '#7a6aaa',
+  'حل':   '#4a8c8c',
+};
+
+// ── INIT ──
+function init() {
+  load();
+  // Sample data if empty
+  if (!events.length) {
+    events = [
+      { id:1, title:'اللقاء الأول', chapter:'الفصل الأول', desc:'تلتقي نورا بالغريب في المكتبة القديمة وتجد رسالة غامضة بين الكتب.', chars:'نورا، الغريب', cat:'حدث',  tension:3 },
+      { id:2, title:'اكتشاف السر',  chapter:'الفصل الثاني', desc:'تكتشف نورا أن الغريب يعرف أسرار عائلتها منذ سنوات.', chars:'نورا', cat:'تحول', tension:6 },
+      { id:3, title:'المواجهة',      chapter:'الفصل الثالث', desc:'تواجه نورا عمر بما عرفته وينكر كل شيء، تتصاعد حدة الحوار.', chars:'نورا، عمر', cat:'صراع', tension:8 },
+      { id:4, title:'نقطة الانهيار', chapter:'الفصل الرابع', desc:'تصل الأحداث إلى الذروة — الحقيقة الكاملة تُكشف دفعة واحدة.', chars:'نورا، عمر، الغريب', cat:'ذروة', tension:10 },
+      { id:5, title:'الصفح والبداية',chapter:'الفصل الخامس', desc:'قرار نورا بالمضي قدماً رغم كل شيء، خاتمة مفتوحة على الأمل.', chars:'نورا', cat:'حل', tension:4 },
+    ];
+    save();
+  }
+  render();
+}
+
+// ── STORAGE ──
+function save() { try { localStorage.setItem('novel_events', JSON.stringify(events)); } catch(e){} }
+function load() { try { const d = localStorage.getItem('novel_events'); if(d) events = JSON.parse(d); } catch(e){} }
+
+// ── RENDER ──
+function render() {
+  renderTimeline();
+  renderChart();
+  renderChapters();
+  updateTensionBar();
+}
+
+function filtered() {
+  if (filter === 'all') return events;
+  return events.filter(e => e.cat === filter);
+}
+
+function renderTimeline() {
+  const list = document.getElementById('tl-list');
+  const evs  = filtered();
+
+  if (!evs.length) {
+    list.innerHTML = `<div class="empty-state"><div>🌿</div>لا توجد أحداث بعد<br><small>اضغطي "+ حدث جديد" لتبدأي رسم خريطتكِ</small></div>`;
+    return;
+  }
+
+  list.innerHTML = evs.map((ev, i) => {
+    const col = CAT_COLORS[ev.cat] || '#888';
+    const idx = events.indexOf(ev);
+    return `
+    <div class="tl-item" data-idx="${idx}">
+      <div class="tl-dot" style="background:${col}; box-shadow: 0 0 0 4px ${col}22;"></div>
+      <div class="tl-card" onclick="openDetail(${idx})">
+        <div class="card-actions">
+          <button class="icon-btn" onclick="event.stopPropagation();openEdit(${idx})" title="تعديل">✏️</button>
+          <button class="icon-btn" onclick="event.stopPropagation();deleteEvent(${idx})" title="حذف">🗑️</button>
+        </div>
+        <div class="tl-chapter">${ev.chapter}</div>
+        <div class="tl-title">${ev.title}</div>
+        <div class="tl-desc">${ev.desc ? ev.desc.substring(0,80)+(ev.desc.length>80?'…':'') : ''}</div>
+        <div class="tl-meta">
+          <span class="cat-pill" style="background:${col}">${ev.cat}</span>
+          <span class="tension-num">توتر: ${ev.tension}/10</span>
+          ${ev.chars ? `<span class="tl-chars">👤 ${ev.chars}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderChart() {
+  const svg = document.getElementById('tension-svg');
+  const evs = events;
+  if (!evs.length) { svg.innerHTML = `<text x="400" y="150" text-anchor="middle" font-family="Amiri,serif" font-size="14" fill="#aaa">أضيفي أحداثاً لترسمي المنحنى</text>`; return; }
+
+  const W = 800, H = 280, PAD = 50;
+  const W2 = W - PAD*2, H2 = H - PAD*2;
+  const n = evs.length;
+
+  // points
+  const pts = evs.map((ev, i) => ({
+    x: PAD + (n === 1 ? W2/2 : i * W2 / (n-1)),
+    y: PAD + H2 - (ev.tension / 10) * H2,
+    ev,
+  }));
+
+  // area gradient fill
+  let area = `M ${pts[0].x} ${H - PAD}`;
+  pts.forEach(p => { area += ` L ${p.x} ${p.y}`; });
+  area += ` L ${pts[pts.length-1].x} ${H - PAD} Z`;
+
+  // smooth line (bezier)
+  let line = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const mx = (pts[i].x + pts[i+1].x) / 2;
+    line += ` C ${mx} ${pts[i].y}, ${mx} ${pts[i+1].y}, ${pts[i+1].x} ${pts[i+1].y}`;
+  }
+
+  // grid lines
+  let grid = '';
+  for (let t = 0; t <= 10; t += 2) {
+    const y = PAD + H2 - (t/10)*H2;
+    grid += `<line x1="${PAD}" y1="${y}" x2="${W-PAD}" y2="${y}" stroke="#ede7d3" stroke-width="1"/>`;
+    grid += `<text x="${PAD-8}" y="${y+4}" text-anchor="end" font-size="10" fill="#aaa" font-family="Amiri,serif">${t}</text>`;
+  }
+
+  // dots + labels
+  let dots = pts.map(p => {
+    const col = CAT_COLORS[p.ev.cat] || '#888';
+    return `
+      <circle cx="${p.x}" cy="${p.y}" r="7" fill="${col}" stroke="white" stroke-width="2" style="cursor:pointer" onclick="openDetail(${events.indexOf(p.ev)})"/>
+      <text x="${p.x}" y="${p.y - 12}" text-anchor="middle" font-size="10" fill="#4a3c36" font-family="Amiri,serif">${p.ev.title.substring(0,8)}</text>
+    `;
+  }).join('');
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#b76e79" stop-opacity="0.2"/>
+        <stop offset="100%" stop-color="#b76e79" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${grid}
+    <path d="${area}" fill="url(#areaGrad)"/>
+    <path d="${line}" fill="none" stroke="#b76e79" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}
+    <text x="${W/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="#aaa" font-family="Amiri,serif">تسلسل الأحداث ←</text>
+  `;
+}
+
+function renderChapters() {
+  const cl = document.getElementById('chapters-list');
+  // Group by chapter
+  const groups = {};
+  events.forEach((ev, idx) => {
+    const ch = ev.chapter || 'غير محدد';
+    if (!groups[ch]) groups[ch] = [];
+    groups[ch].push({ ev, idx });
+  });
+
+  if (!Object.keys(groups).length) {
+    cl.innerHTML = `<div class="empty-state"><div>📚</div>لا توجد فصول بعد</div>`;
+    return;
+  }
+
+  cl.innerHTML = Object.entries(groups).map(([ch, items]) => `
+    <div class="chapter-group">
+      <div class="ch-header">
+        <span class="ch-name">📖 ${ch}</span>
+        <span class="ch-count">${items.length} ${items.length===1?'حدث':'أحداث'}</span>
+      </div>
+      <div class="ch-events">
+        ${items.map(({ev, idx}) => {
+          const col = CAT_COLORS[ev.cat] || '#888';
+          return `<div class="ch-event-row" onclick="openDetail(${idx})">
+            <div class="ch-evt-dot" style="background:${col}"></div>
+            <span class="ch-evt-title">${ev.title}</span>
+            <span class="cat-pill" style="background:${col};font-size:0.65rem;padding:2px 7px;">${ev.cat}</span>
+            <span class="ch-evt-tension">⚡${ev.tension}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateTensionBar() {
+  if (!events.length) { document.getElementById('avg-tension').style.width='0%'; document.getElementById('avg-val').textContent='0%'; return; }
+  const avg = events.reduce((s,e)=>s+e.tension,0) / events.length;
+  const pct = Math.round((avg/10)*100);
+  document.getElementById('avg-tension').style.width = pct+'%';
+  document.getElementById('avg-val').textContent = pct+'%';
+}
+
+// ── VIEWS ──
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.vt-btn').forEach((b,i) => b.classList.toggle('active', ['timeline','chart','chapters'][i]===v));
+  if (v === 'chart') renderChart();
+  if (v === 'chapters') renderChapters();
+}
+
+// ── FILTER ──
+function setFilter(f) {
+  filter = f;
+  document.querySelectorAll('.filter-chip').forEach(b => b.classList.toggle('active', b.dataset.cat === f));
+  renderTimeline();
+}
+
+// ── ADD / EDIT ──
+function openAdd() {
+  editIdx = null;
+  document.getElementById('modal-title').textContent = '✨ إضافة حدث جديد';
+  document.getElementById('f-title').value   = '';
+  document.getElementById('f-chapter').value = 'الفصل الأول';
+  document.getElementById('f-desc').value    = '';
+  document.getElementById('f-chars').value   = '';
+  document.getElementById('f-tension').value = 5;
+  document.getElementById('tension-preview').textContent = '5';
+  document.getElementById('t-val').textContent = '5';
+  setCat('حدث');
+  document.getElementById('modal-add').classList.add('open');
+  setTimeout(() => document.getElementById('f-title').focus(), 100);
+}
+
+function openEdit(idx) {
+  editIdx = idx;
+  const ev = events[idx];
+  document.getElementById('modal-title').textContent = '✏️ تعديل الحدث';
+  document.getElementById('f-title').value    = ev.title;
+  document.getElementById('f-chapter').value  = ev.chapter;
+  document.getElementById('f-desc').value     = ev.desc;
+  document.getElementById('f-chars').value    = ev.chars;
+  document.getElementById('f-tension').value  = ev.tension;
+  document.getElementById('tension-preview').textContent = ev.tension;
+  document.getElementById('t-val').textContent = ev.tension;
+  setCat(ev.cat);
+  closeModal('modal-detail');
+  document.getElementById('modal-add').classList.add('open');
+}
+
+function setCat(v) {
+  document.querySelectorAll('#cat-picker .cat-opt').forEach(b => b.classList.toggle('sel', b.dataset.v === v));
+}
+
+document.querySelectorAll('#cat-picker .cat-opt').forEach(b => {
+  b.onclick = () => setCat(b.dataset.v);
+});
+
+document.getElementById('f-tension').addEventListener('input', function() {
+  document.getElementById('tension-preview').textContent = this.value;
+  document.getElementById('t-val').textContent = this.value;
+});
+
+function saveEvent() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { showToast('⚠️ أدخلي عنوان الحدث'); return; }
+  const sel = document.querySelector('#cat-picker .cat-opt.sel');
+  const ev = {
+    id: editIdx !== null ? events[editIdx].id : Date.now(),
+    title,
+    chapter:  document.getElementById('f-chapter').value.trim() || 'غير محدد',
+    desc:     document.getElementById('f-desc').value.trim(),
+    chars:    document.getElementById('f-chars').value.trim(),
+    cat:      sel ? sel.dataset.v : 'حدث',
+    tension:  parseInt(document.getElementById('f-tension').value),
+  };
+  if (editIdx !== null) { events[editIdx] = ev; showToast('✅ تم تعديل الحدث'); }
+  else { events.push(ev); showToast('✨ تم إضافة الحدث'); }
+  save(); closeModal('modal-add'); render();
+}
+
+// ── DETAIL ──
+function openDetail(idx) {
+  const ev  = events[idx];
+  const col = CAT_COLORS[ev.cat] || '#888';
+  const mf  = (ev.tension/10)*100;
+  const mCol = ev.tension >= 8 ? '#c26a4a' : ev.tension >= 5 ? '#c9963a' : '#4a8c8c';
+
+  document.getElementById('detail-content').innerHTML = `
+    <span class="detail-cat-badge" style="background:${col}">${ev.cat}</span>
+    <div class="detail-title">${ev.title}</div>
+    <div class="detail-desc">${ev.desc || '<i style="color:#aaa">لا يوجد وصف</i>'}</div>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="di-label">الفصل</div>
+        <div class="di-val">📖 ${ev.chapter}</div>
+      </div>
+      <div class="detail-item">
+        <div class="di-label">الشخصيات</div>
+        <div class="di-val">👤 ${ev.chars || '—'}</div>
+      </div>
+      <div class="detail-item" style="grid-column:1/-1">
+        <div class="di-label">مستوى التوتر — ${ev.tension}/10</div>
+        <div class="tension-meter"><div class="tension-meter-fill" style="width:${mf}%;background:${mCol}"></div></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('detail-edit-btn').onclick = () => openEdit(idx);
+  document.getElementById('modal-detail').classList.add('open');
+}
+
+// ── DELETE ──
+function deleteEvent(idx) {
+  if (!confirm('حذف هذا الحدث نهائياً؟')) return;
+  events.splice(idx, 1);
+  save(); render();
+  showToast('🗑️ تم الحذف');
+}
+
+function clearAll() {
+  if (!confirm('مسح جميع الأحداث نهائياً؟')) return;
+  events = []; save(); render();
+  showToast('🗑️ تم مسح الكل');
+}
+
+// ── UTILS ──
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+init();
+</script>
+</body>
+</html>
